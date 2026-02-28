@@ -1,0 +1,19 @@
+meta {
+  name: Protected Endpoint (Example)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/test/hello
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}
