@@ -50,11 +50,13 @@ public class AuthController {
                     .body(Map.of("error", "Email already exists"));
         }
 
+        String userRole = request.roles() != null && !request.roles().isEmpty() ? request.roles() : "STUDENT";
+
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .roles(Set.of(Role.ROLE_STUDENT))
+                .roles(Set.of(Role.valueOf(userRole.toUpperCase())))
                 .build();
 
         userRepository.save(user);
