@@ -51,12 +51,13 @@ public class AuthController {
         }
 
         String userRole = request.roles() != null && !request.roles().isEmpty() ? request.roles() : "STUDENT";
+        String roleEnumName = userRole.toUpperCase().startsWith("ROLE_") ? userRole.toUpperCase() : "ROLE_" + userRole.toUpperCase();
 
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .roles(Set.of(Role.valueOf(userRole.toUpperCase())))
+                .roles(Set.of(Role.valueOf(roleEnumName)))
                 .build();
 
         userRepository.save(user);
