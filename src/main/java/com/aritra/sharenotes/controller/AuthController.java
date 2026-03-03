@@ -3,97 +3,35 @@ package com.aritra.sharenotes.controller;
 import com.aritra.sharenotes.dto.AuthResponse;
 import com.aritra.sharenotes.dto.LoginRequest;
 import com.aritra.sharenotes.dto.RegisterRequest;
-import com.aritra.sharenotes.entity.Role;
-import com.aritra.sharenotes.entity.User;
-import com.aritra.sharenotes.repository.UserRepository;
-import com.aritra.sharenotes.security.JwtService;
+import com.aritra.sharenotes.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
+    private final AuthService authService;
 
-    public AuthController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder,
-                          JwtService jwtService,
-                          AuthenticationManager authenticationManager) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.authenticationManager = authenticationManager;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "Username already exists"));
-        }
-        if (userRepository.existsByEmail(request.email())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "Email already exists"));
-        }
-
-        String userRole = request.roles() != null && !request.roles().isEmpty() ? request.roles() : "STUDENT";
-        String roleEnumName = userRole.toUpperCase().startsWith("ROLE_") ? userRole.toUpperCase() : "ROLE_" + userRole.toUpperCase();
-
-        User user = User.builder()
-                .username(request.username())
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .roles(Set.of(Role.valueOf(roleEnumName)))
-                .build();
-
-        userRepository.save(user);
-
-        // Authenticate immediately after registration to return a token
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
-        );
-
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String token = jwtService.generateToken(userDetails);
-
-        Set<String> roles = user.getRoles().stream()
-                .map(Role::name)
-                .collect(Collectors.toSet());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new AuthResponse(token, user.getUsername(), user.getEmail(), roles));
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
-        );
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String token = jwtService.generateToken(userDetails);
-
-        User user = userRepository.findByUsername(request.username())
-                .orElseThrow();
-
-        Set<String> roles = user.getRoles().stream()
-                .map(Role::name)
-                .collect(Collectors.toSet());
-
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), user.getEmail(), roles));
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(authService.refresh(body.get("refreshToken")));
     }
 }

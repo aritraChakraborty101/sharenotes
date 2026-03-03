@@ -1,0 +1,26 @@
+meta {
+  name: Update User Roles
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/admin/users/{{userId}}/roles
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "newRoles": ["ROLE_FACULTY"]
+  }
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+  userId: b5216ed4-9b83-4ae0-b3bb-ac292e98bd44
+}

@@ -12,13 +12,19 @@ post {
 
 body:json {
   {
-    "username": "teacher2",
-    "email": "teacher2@example.com",
-    "password": "P@ssword123",
-    "roles": "ROLE_FACULTY"
+    "username": "johndoe",
+    "email": "johndoe@example.com",
+    "password": "P@ssword123"
   }
 }
 
 vars:pre-request {
   baseUrl: http://localhost:8080
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("accessToken", res.body.accessToken);
+    bru.setVar("refreshToken", res.body.refreshToken);
+  }
 }
